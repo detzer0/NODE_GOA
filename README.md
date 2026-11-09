@@ -235,18 +235,7 @@ PyYAML; all are preinstalled on Colab. Double precision is enabled through
 call it before building data or parameters. The solver is CPU-friendly: the
 temporal operators are tridiagonal and the networks are small.
 
-## Citation
 
-```bibtex
-@article{HintermuellerKorolev2026,
-  author  = {Hintermüller, Michael and Hinze, Michael and Korolev, Denis},
-  title   = {Layerwise goal-oriented adaptivity for neural {ODE}s:
-             an optimal control perspective},
-  journal = {Journal of Numerical Mathematics},
-  year    = {2026},
-  doi     = {10.1515/jnma-2026-0008}
-}
-```
 
 ## License
 
