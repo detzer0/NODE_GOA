@@ -81,11 +81,7 @@ coordinates *is* the $H^1$ stationarity measure and a stock SciPy
 implementation respects the $H^1$ geometry.
 
 **Algorithm 2 — adaptive depth.** From the accepted solution the local
-indicators
-
-$$ \eta_k \;=\; R^k_{p}\,\omega^k_{x} \;+\; \lvert \rho^k_{\theta} \rvert \;+\; R^k_{x}\,\omega^k_{p} $$
-
-are evaluated, a marking rule selects $\mathcal{M}_K$, each marked interval is
+indicators are evaluated, a marking rule selects $\mathcal{M}_K$, each marked interval is
 bisected at its midpoint, and the optimized control — together with the Adam
 moments — is carried to the refined grid by midpoint prolongation. Existing
 nodal values are copied, never recomputed.
