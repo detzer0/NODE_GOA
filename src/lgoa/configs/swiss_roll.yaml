@@ -1,0 +1,76 @@
+# Swiss roll -- Section 8.1 of the paper.
+#
+# Two concentric spirals in R^2, binary classification, hidden dimension 4,
+# terminal time T = 2.5, refined from K = 2 to K_max = 12.
+# Algorithm 1 uses eps_stat = 1e-3 and the switching factor kappa_s = 5.0.
+#
+# The notebook overrides only the few parameters it studies, e.g.
+#   lgoa.load_preset("swiss_roll", stationarity_tolerance=1e-3,
+#                    marking="dorfler", dorfler_fraction=0.5)
+
+use_x64: true
+verbose: false
+
+problem:
+  name: swiss_roll
+  num_classes: 2
+  hidden_dim: 4
+  final_time: 2.5
+  samples_per_class: 1200
+  train_fraction: 0.60
+  spiral_noise: 0.0
+  seed: 0
+
+initialization:
+  # The paper searches ten initializations once and shares the best endpoint
+  # maps with every refinement path.  Lower n_candidates for a faster run.
+  n_candidates: 10
+  seed_stride: 1000
+  model_seed: 0
+  search_max_epochs: 1000
+  search_min_epochs: 150
+  check_every: 25
+  validation_patience: 8
+  validation_min_delta: 1.0e-4
+  learning_rate: 2.0e-3
+  reg_lambda: 1.0e-3          # initialization uses its own lambda
+  control_init_noise: 0.0
+
+solver:
+  reg_lambda: 1.0e-3          # lambda = 1e-3 is the robust compromise (Table 1)
+  stationarity_tolerance: 1.0e-3
+
+  adam_learning_rate: 1.0e-3
+  adam_min_learning_rate: 1.0e-4
+  adam_lr_decay: 0.75
+  adam_plateau_patience: 4
+  adam_convergence_patience: 2
+  adam_relative_improvement: 1.0e-3
+  adam_check_every: 100
+  adam_min_steps: 500
+  adam_max_steps: 20000
+  adam_reset_moments_on_lr_decay: true
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_eps: 1.0e-8
+  grad_clip: 50.0
+
+  use_bfgs_polish: true
+  bfgs_method: L-BFGS-B
+  bfgs_switch_ratio: 5.0      # kappa_s
+  bfgs_max_iterations: 10000
+  bfgs_ftol: 1.0e-13
+  bfgs_internal_gtol: 1.0e-12
+  bfgs_max_line_search_steps: 40
+  bfgs_memory: 20
+
+adaptive:
+  initial_depth: 2
+  max_depth: 12
+  marking: conservative       # conservative | dorfler
+  dorfler_fraction: 0.5
+  transfer_adam_state: true
+  allow_nonstationary_refinement: true
+  near_stationary_ratio: 1.5
+  indicator_tolerance: null
+  indicator_sup_samples: 50

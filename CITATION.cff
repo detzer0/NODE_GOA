@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the accompanying article."
+title: "lgoa: layerwise goal-oriented adaptivity for neural ODEs"
+version: 1.0.0
+license: MIT
+type: software
+authors:
+  - family-names: "Hintermüller"
+    given-names: "Michael"
+    affiliation: "Humboldt-Universität zu Berlin and Weierstrass Institute, Berlin, Germany"
+  - family-names: "Hinze"
+    given-names: "Michael"
+    affiliation: "Mathematical Institute, Universität Koblenz, Germany"
+  - family-names: "Korolev"
+    given-names: "Denis"
+    email: "korolev@wias-berlin.de"
+    affiliation: "Weierstrass Institute for Applied Analysis and Stochastics, Berlin, Germany"
+preferred-citation:
+  type: article
+  title: "Layerwise goal-oriented adaptivity for neural ODEs: an optimal control perspective"
+  journal: "Journal of Numerical Mathematics"
+  year: 2026
+  doi: "10.1515/jnma-2026-0008"
+  authors:
+    - family-names: "Hintermüller"
+      given-names: "Michael"
+    - family-names: "Hinze"
+      given-names: "Michael"
+    - family-names: "Korolev"
+      given-names: "Denis"
