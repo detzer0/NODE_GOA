@@ -63,13 +63,8 @@ $\theta_\tau$ is continuous and piecewise linear, the state is advanced by
 explicit Euler with midpoint controls, and the discrete adjoint supplies the
 exact derivative of the reduced objective. Gradients are taken in the discrete
 $H^1$ metric: with $B^\tau = M^\tau + A^\tau$ the metric gradient solves
-$B^\tau G_\tau = R_\tau$, and
+$B^\tau G_\tau = R_\tau$.
 
-$$ s_\tau(\Theta_\tau) \;=\; \lVert g_\tau \rVert_{H^1} \;=\; \bigl[\operatorname{trace}(G_\tau^\top B^\tau G_\tau)\bigr]^{1/2} $$
-
-is the stationarity measure that drives both the inner solver and the outer
-loop. The time matrices are tridiagonal, so each gradient solve is $O(K)$ per
-control component.
 
 **Algorithm 1 — fixed depth.** Full-batch $H^1$-Adam provides a robust warm
 start. Once $s_\tau \le \kappa_s \varepsilon_{\mathrm{stat}}$, the solver
