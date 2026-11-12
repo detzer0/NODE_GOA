@@ -88,8 +88,7 @@ $$ \eta_k = \left|\widetilde\rho_{\mathrm{adj}}^k\right|
 
 are evaluated, a marking rule selects $\mathcal{M}_K$, each marked interval is
 bisected at its midpoint, and the optimized control — together with the Adam
-moments — is carried to the refined grid by midpoint prolongation. Existing
-nodal values are copied, never recomputed.
+moments — is carried to the refined grid by midpoint prolongation. 
 
 Two marking rules are shipped: `conservative` (largest indicator, one layer per
 round) and `dorfler` (smallest set meeting a bulk fraction $\vartheta$, several
