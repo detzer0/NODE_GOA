@@ -160,25 +160,6 @@ $d = 5$, $T = 5$, $K: 2 \to 15$, $\varepsilon_{\mathrm{stat}} = 5 \times
 finishes in a couple of minutes on a Colab CPU; set `QUICK = False` for the
 paper setup.
 
-## Figures
-
-Every function in `lgoa.plots` takes a `History` and returns a
-`matplotlib.figure.Figure`, so the same call works in a notebook, a script and
-a test.
-
-| Function | Shows | Paper |
-|---|---|---|
-| `dataset` | the raw data by class | Fig. 2(A), 2(C) |
-| `decision_boundary` | predicted class regions | Fig. 2(B), 2(D) |
-| `learning_curves` | stationarity, objective, losses, accuracy vs $K$ | Fig. 3 |
-| `trajectories` | state, control and adjoint in time | Fig. 4 |
-| `refinement_events` | $\eta_k$ before / after insertion / re-optimized | Figs. 5, 7, 9 |
-| `indicator_components` | the three contributions to $\eta_K$ | Fig. 6(A) |
-| `grid_history` | every temporal grid of the hierarchy | Figs. 8, 10, 11 |
-
-`plots.save_all(history, data, directory)` writes all of them as PDF and PNG;
-`history.to_csv(directory)` writes the phase table, the event table and the
-final grid and indicators.
 
 ## Scope
 
