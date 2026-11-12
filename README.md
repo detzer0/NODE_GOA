@@ -4,8 +4,7 @@ Reference implementation of the adaptive solver introduced in
 
 > M. Hintermüller, M. Hinze and D. Korolev
 > **Layerwise goal-oriented adaptivity for neural ODEs: an optimal control perspective.**
-> *Journal of Numerical Mathematics* (2026).
-> [doi:10.1515/jnma-2026-0008](https://doi.org/10.1515/jnma-2026-0008)
+
 
 A neural ODE is treated as an optimal control problem in time. The depth of the
 network is a temporal discretization, so *where to add a layer* becomes a mesh
