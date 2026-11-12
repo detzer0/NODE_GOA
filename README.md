@@ -188,54 +188,8 @@ final grid and indicators.
 ## Scope
 
 This repository provides **the solver and the two example setups for a single
-seed**, with the two marking rules of the paper's algorithms. It is not the
-harness for the published ablation, which averages ten model initializations per
-configuration and also runs the minimum-indicator and random-insertion baselines
-of Table 2 — that is a cluster job, not a notebook. What a single seed does show
-is the mechanism: how the indicator responds to insertion and re-optimization,
-how Dörfler marking inserts several layers per round, and how the resulting
-grids differ. Section 8 of either notebook compares conservative against Dörfler
-marking at several bulk fractions from one shared calibration, which keeps the
-comparison paired.
+seed**, with the two marking rules of the paper's algorithms. 
 
-### Indicator evaluation
-
-The state and adjoint contributions use the **direct reconstructed residual
-pairings**, matching the supplied Swiss-roll and Peaks ablation notebooks.
-On $I_k$, write $h_k=t_k-t_{k-1}$ and
-$\theta_\tau(s)=(1-s)\theta_\tau^{k-1}+s\theta_\tau^k$. The signed terms are
-
-$$
-\widetilde\rho_{\mathrm{adj}}^k
-= -h_k\int_0^1
-\left\langle D_1N_F(x_\tau^{k-1},\theta_\tau(s))^*p_\tau^k,
- s(x_\tau^k-x_\tau^{k-1})\right\rangle\,ds,
-$$
-
-$$
-\widetilde\rho_{\mathrm{state}}^k
-= h_k\int_0^1
-\left\langle N_F(x_\tau^{k-1},\theta_\tau(s)),
- (1-s)(p_\tau^k-p_\tau^{k-1})\right\rangle\,ds.
-$$
-
-The reconstructed one-sided jump pairings are zero. Absolute values are taken
-**after** the signed integrals have been evaluated; no residual-norm or sampled
-supremum products enter the estimator. The global value is
-$\eta_K=\tfrac12\sum_k\eta_k$.
-
-The state and adjoint integrals use Gauss--Legendre orders $8,16,32,64,128$.
-Order doubling stops when **every local signed state and adjoint integral**
-agrees with its previous-order value within
-$\mathrm{atol}+\mathrm{rtol}\,|\rho_{\mathrm{new}}|$, with
-$\mathrm{atol}=10^{-9}$ and $\mathrm{rtol}=10^{-7}$.
-As in the reference notebooks, the last estimate is retained silently when the
-maximum order is reached without convergence. This is explicitly recorded as
-`direct_quadrature_converged=False`; the consecutive-order difference is an
-empirical estimate, not a certified quadrature error bound.
-
-The settings can be overridden through `load_preset`, `with_overrides`, YAML,
-or the CLI's `--set` option:
 
 ```python
 cfg = lgoa.load_preset(
