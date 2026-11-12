@@ -1,0 +1,221 @@
+{
+  "reference_files": {
+    "swiss": {
+      "filename": "Resnet_Swiss_Roll_Doerfler_(ablation,_quadrature).ipynb",
+      "sha256": "27db5534f0f6c76a9cc620b1aabfbb235feb18e47004d6c0a8c702fb1eed56da",
+      "executed_definition_cells_zero_based": [
+        8,
+        10,
+        12
+      ]
+    },
+    "peaks": {
+      "filename": "Resnet_Peaks_Doerfler_(exact,_ablation) (1).ipynb",
+      "sha256": "de0642dd93a87af995e264bcf3125eba2c93a8a8e158c930e99b8c9856f86eed",
+      "executed_definition_cells_zero_based": [
+        8,
+        10,
+        12
+      ]
+    }
+  },
+  "environment": {
+    "jax": "0.9.0.1",
+    "numpy": "2.3.5",
+    "precision": "float64",
+    "backend": "cpu",
+    "python": "3.13.5",
+    "scipy": "1.17.0",
+    "pytest": "9.0.2"
+  },
+  "tolerances": {
+    "rtol": 2e-12,
+    "atol": 2e-13
+  },
+  "comparison_fields": [
+    "total",
+    "state",
+    "adjoint",
+    "control",
+    "state_signed",
+    "adjoint_signed",
+    "control_signed",
+    "state_volume_signed",
+    "adjoint_volume_signed",
+    "state_jump_signed",
+    "adjoint_jump_signed",
+    "control_mass_signed",
+    "control_stiffness_signed",
+    "control_dynamics_signed",
+    "global_state_indicator",
+    "global_adjoint_indicator",
+    "global_control_indicator",
+    "global_direct_indicator",
+    "control_fraction",
+    "max_abs_control_stiffness_term",
+    "direct_quadrature_order",
+    "direct_quadrature_error_estimate",
+    "direct_quadrature_converged",
+    "reconstruction_jump_trace_error"
+  ],
+  "results": [
+    {
+      "case": "single",
+      "reference": "swiss",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 16,
+      "quadrature_converged": true,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "single",
+      "reference": "peaks",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 16,
+      "quadrature_converged": true,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "uniform",
+      "reference": "swiss",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 32,
+      "quadrature_converged": true,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "uniform",
+      "reference": "peaks",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 32,
+      "quadrature_converged": true,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "nonuniform",
+      "reference": "swiss",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 16,
+      "quadrature_converged": true,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "nonuniform",
+      "reference": "peaks",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 16,
+      "quadrature_converged": true,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "constant",
+      "reference": "swiss",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 16,
+      "quadrature_converged": true,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "constant",
+      "reference": "peaks",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 16,
+      "quadrature_converged": true,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "sharp",
+      "reference": "swiss",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 128,
+      "quadrature_converged": false,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "sharp",
+      "reference": "peaks",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 128,
+      "quadrature_converged": false,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "zero",
+      "reference": "swiss",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 16,
+      "quadrature_converged": true,
+      "control_unchanged_bitwise": true
+    },
+    {
+      "case": "zero",
+      "reference": "peaks",
+      "max_absolute_difference": 0.0,
+      "quadrature_order": 16,
+      "quadrature_converged": true,
+      "control_unchanged_bitwise": true
+    }
+  ],
+  "validation": {
+    "focused_regression_tests": 32,
+    "focused_regression_tests_passed": 32,
+    "short_hierarchy_tests": 4,
+    "short_hierarchy_tests_passed": 4,
+    "short_hierarchies": [
+      {
+        "problem": "swiss_roll",
+        "marking": "conservative",
+        "initial_depth": 2,
+        "max_depth": 4,
+        "calibration_max_epochs": 2,
+        "adam_max_steps_per_phase": 4,
+        "bfgs": false
+      },
+      {
+        "problem": "swiss_roll",
+        "marking": "dorfler",
+        "initial_depth": 2,
+        "max_depth": 4,
+        "calibration_max_epochs": 2,
+        "adam_max_steps_per_phase": 4,
+        "bfgs": false
+      },
+      {
+        "problem": "peaks",
+        "marking": "conservative",
+        "initial_depth": 2,
+        "max_depth": 4,
+        "calibration_max_epochs": 2,
+        "adam_max_steps_per_phase": 4,
+        "bfgs": false
+      },
+      {
+        "problem": "peaks",
+        "marking": "dorfler",
+        "initial_depth": 2,
+        "max_depth": 4,
+        "calibration_max_epochs": 2,
+        "adam_max_steps_per_phase": 4,
+        "bfgs": false
+      }
+    ],
+    "plotting_functions_rendered": [
+      "dataset",
+      "decision_boundary",
+      "learning_curves",
+      "trajectories",
+      "refinement_events",
+      "indicator_components",
+      "grid_history"
+    ],
+    "self_check_float64": {
+      "passed": 8,
+      "total": 8
+    },
+    "self_check_float32": {
+      "passed": 8,
+      "total": 8
+    },
+    "scope": "Executed in two pytest groups. No full notebook training/ten-seed paper ablations, GPU tests, or unavailable original repository tests were run."
+  }
+}

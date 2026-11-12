@@ -69,7 +69,7 @@ from .indicators import LocalIndicators
 from .initialization import Calibration, calibrate_endpoint_maps
 from .verification import self_check
 
-__version__ = "1.0.0"
+__version__ = "1.0.2"
 
 __all__ = [
     "AdaptiveConfig",

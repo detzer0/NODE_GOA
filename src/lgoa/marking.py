@@ -82,6 +82,12 @@ def mark(
             proposed_count = int(
                 np.searchsorted(np.cumsum(weights[order]), target, side="left") + 1
             )
+            # The running sum is taken in descending order while total_weight
+            # is summed in interval order, so for a bulk fraction at or near
+            # one the cumulative sum can fall an ulp short of the target and
+            # searchsorted then indexes past the end. Marking every interval
+            # always satisfies the criterion, so cap the count at K.
+            proposed_count = min(proposed_count, int(values.size))
         else:
             # Keep the rule defined if every indicator vanishes.
             proposed_count = 1

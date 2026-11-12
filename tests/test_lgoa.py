@@ -112,6 +112,19 @@ def test_dorfler_meets_the_bulk_criterion():
             assert reduced / np.sum(eta) < fraction
 
 
+def test_dorfler_never_proposes_more_intervals_than_exist():
+    """At a bulk fraction of one the cumulative sum can fall an ulp short."""
+    rng = np.random.default_rng(0)
+    for _ in range(200):
+        eta = rng.random(rng.integers(2, 12)) * 10.0 ** rng.integers(-6, 3)
+        result = marking.mark(
+            eta, "dorfler", max_new_layers=eta.size, dorfler_fraction=1.0
+        )
+        assert result.proposed_count <= eta.size
+        assert result.marked_intervals == tuple(range(eta.size))
+        assert not result.budget_capped
+
+
 def test_dorfler_respects_the_layer_budget():
     eta = np.array([0.25, 0.25, 0.25, 0.25])
     result = marking.mark(eta, "dorfler", max_new_layers=2, dorfler_fraction=0.99)
@@ -188,6 +201,63 @@ def test_indicators_are_finite_and_nonnegative(tiny_run):
         assert phase.eta.size == phase.depth
         assert np.all(np.isfinite(phase.eta))
         assert np.all(phase.eta >= 0.0)
+
+
+def test_control_pullback_defaults_to_the_paper_quadrature():
+    assert lgoa.load_preset("peaks").adaptive.control_pullback_quadrature == "gauss"
+    with pytest.raises(ValueError, match="control_pullback_quadrature"):
+        lgoa.load_preset("peaks", control_pullback_quadrature="trapezoid")
+
+
+def test_gauss_and_endpoint_linear_pullbacks_differ_but_both_converge(tiny_run):
+    """Eq. (89) integrates the nonlinear pullback; the legacy path interpolates it."""
+    from lgoa.indicators import compute_local_indicators
+
+    _, data, history = tiny_run
+    phase = history.final_phase
+    shared = dict(
+        params=phase.params,
+        time_grid=phase.result.time_grid,
+        X=data.X_indicator,
+        y=data.y_indicator,
+        solution_fn=phase.result.control.solution_fn,
+        reg_lambda=history.config.solver.reg_lambda,
+    )
+    gauss = compute_local_indicators(**shared, control_pullback_quadrature="gauss")
+    linear = compute_local_indicators(
+        **shared, control_pullback_quadrature="endpoint_linear"
+    )
+
+    assert gauss.direct_quadrature_converged
+    for result in (gauss, linear):
+        assert np.all(np.isfinite(result.total))
+        assert np.all(result.total >= 0.0)
+    # The two agree on the mass and stiffness pairings, which are closed form.
+    np.testing.assert_allclose(
+        gauss.control_mass_signed, linear.control_mass_signed, rtol=1e-12
+    )
+    np.testing.assert_allclose(
+        gauss.control_stiffness_signed, linear.control_stiffness_signed, rtol=1e-12
+    )
+
+
+def test_gauss_pullback_is_insensitive_to_the_starting_order(tiny_run):
+    """Order doubling must land on the same value from a different start."""
+    from lgoa.indicators import compute_local_indicators
+
+    _, data, history = tiny_run
+    phase = history.final_phase
+    shared = dict(
+        params=phase.params,
+        time_grid=phase.result.time_grid,
+        X=data.X_indicator,
+        y=data.y_indicator,
+        solution_fn=phase.result.control.solution_fn,
+        reg_lambda=history.config.solver.reg_lambda,
+    )
+    coarse = compute_local_indicators(**shared, direct_quadrature_initial_order=4)
+    fine = compute_local_indicators(**shared, direct_quadrature_initial_order=32)
+    np.testing.assert_allclose(coarse.total, fine.total, rtol=1e-8, atol=1e-12)
 
 
 def test_indicator_components_sum_to_the_total(tiny_run):

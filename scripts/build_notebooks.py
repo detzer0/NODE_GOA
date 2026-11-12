@@ -58,6 +58,10 @@ runs the solver and draws the figures. The two algorithms of the paper are
   warm start, then BFGS in $H^1$-whitened coordinates, on a fixed temporal grid;
 * **Algorithm 2** &mdash; `lgoa.adaptive.run`: solve &rarr; estimate $\\eta_k$
   &rarr; mark &rarr; bisect &rarr; prolongate, until the layer budget is spent.
+
+The local indicator is the direct reconstructed residual of eq. (90): three
+signed pairings, integrated by Gauss--Legendre order doubling and made
+absolute only afterwards.
 """
         ),
         markdown("## 1. Install"),
@@ -308,7 +312,6 @@ SPECS = [
             "    search_min_epochs=60,\n"
             "    adam_max_steps=4000,       # paper: 20000\n"
             "    bfgs_max_iterations=500,   # paper: 10000\n"
-            "    indicator_sup_samples=20,  # paper: 50\n"
             "    max_depth=9,               # paper: 12"
         ),
         "closing": (
@@ -342,7 +345,6 @@ SPECS = [
             "    search_min_epochs=60,\n"
             "    adam_max_steps=4000,       # paper: 20000\n"
             "    bfgs_max_iterations=500,   # paper: 5000\n"
-            "    indicator_sup_samples=20,  # paper: 50\n"
             "    max_depth=10,              # paper: 15"
         ),
         "closing": (

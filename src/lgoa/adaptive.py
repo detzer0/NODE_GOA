@@ -52,7 +52,11 @@ def _indicators_on_grid(params, time_grid, data, problem, solver, adaptive, *, k
         data.y_indicator,
         control.solution_fn,
         reg_lambda=solver.reg_lambda,
-        supremum_samples=adaptive.indicator_sup_samples,
+        direct_quadrature_initial_order=adaptive.direct_quadrature_initial_order,
+        direct_quadrature_max_order=adaptive.direct_quadrature_max_order,
+        direct_quadrature_rtol=adaptive.direct_quadrature_rtol,
+        direct_quadrature_atol=adaptive.direct_quadrature_atol,
+        control_pullback_quadrature=adaptive.control_pullback_quadrature,
     )
 
 
@@ -136,7 +140,11 @@ def run(
             data.y_indicator,
             phase_result.control.solution_fn,
             reg_lambda=solver.reg_lambda,
-            supremum_samples=adaptive.indicator_sup_samples,
+            direct_quadrature_initial_order=adaptive.direct_quadrature_initial_order,
+            direct_quadrature_max_order=adaptive.direct_quadrature_max_order,
+            direct_quadrature_rtol=adaptive.direct_quadrature_rtol,
+            direct_quadrature_atol=adaptive.direct_quadrature_atol,
+            control_pullback_quadrature=adaptive.control_pullback_quadrature,
         )
 
         near_stationary = bool(

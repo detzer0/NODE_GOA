@@ -58,7 +58,12 @@ _INDICATOR_PHASE_FIELDS = (
     "global_state_indicator",
     "global_adjoint_indicator",
     "global_control_indicator",
-    "global_practical_indicator",
+    "global_practical_indicator",  # retained name for existing consumers
+    "global_direct_indicator",
+    "direct_quadrature_order",
+    "direct_quadrature_error_estimate",
+    "direct_quadrature_converged",
+    "reconstruction_jump_trace_error",
     "control_fraction",
     "max_abs_control_stiffness_term",
 )
@@ -224,6 +229,15 @@ class RefinementEvent:
                 else np.nan
             ),
             "children_to_parent_ratio": self.parent_child_ratio(),
+            "post_insertion_direct_quadrature_order": (
+                self.after_immediate.direct_quadrature_order
+            ),
+            "post_insertion_direct_quadrature_error_estimate": (
+                self.after_immediate.direct_quadrature_error_estimate
+            ),
+            "post_insertion_direct_quadrature_converged": (
+                self.after_immediate.direct_quadrature_converged
+            ),
         }
 
 
@@ -354,6 +368,27 @@ class History:
                     "eta_adjoint": self.final_phase.indicators.adjoint,
                     "eta_control": self.final_phase.indicators.control,
                     "eta_total": self.final_phase.eta,
+                    "rho_state_signed": self.final_phase.indicators.state_signed,
+                    "rho_adjoint_signed": self.final_phase.indicators.adjoint_signed,
+                    "rho_control_signed": self.final_phase.indicators.control_signed,
+                    "rho_control_mass_signed": (
+                        self.final_phase.indicators.control_mass_signed
+                    ),
+                    "rho_control_stiffness_signed": (
+                        self.final_phase.indicators.control_stiffness_signed
+                    ),
+                    "rho_control_dynamics_signed": (
+                        self.final_phase.indicators.control_dynamics_signed
+                    ),
+                    "direct_quadrature_order": (
+                        self.final_phase.indicators.direct_quadrature_order
+                    ),
+                    "direct_quadrature_error_estimate": (
+                        self.final_phase.indicators.direct_quadrature_error_estimate
+                    ),
+                    "direct_quadrature_converged": (
+                        self.final_phase.indicators.direct_quadrature_converged
+                    ),
                 }
             ),
         }

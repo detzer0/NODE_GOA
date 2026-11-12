@@ -4,7 +4,8 @@ Reference implementation of the adaptive solver introduced in
 
 > M. Hintermüller, M. Hinze and D. Korolev
 > **Layerwise goal-oriented adaptivity for neural ODEs: an optimal control perspective.**
-
+> *Journal of Numerical Mathematics* (2026).
+> [doi:10.1515/jnma-2026-0008](https://doi.org/10.1515/jnma-2026-0008)
 
 A neural ODE is treated as an optimal control problem in time. The depth of the
 network is a temporal discretization, so *where to add a layer* becomes a mesh
@@ -19,10 +20,9 @@ figures:
 | [`notebooks/01_swiss_roll.ipynb`](notebooks/01_swiss_roll.ipynb) | two concentric spirals, binary | 8.1 |
 | [`notebooks/02_peaks.ipynb`](notebooks/02_peaks.ipynb) | Peaks function, five classes | 8.2 |
 
-<!-- Replace OWNER/REPO below once the repository is published. -->
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OWNER/REPO/blob/main/notebooks/01_swiss_roll.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/detzer0/NODE_GOA/blob/main/notebooks/01_swiss_roll.ipynb)
 Swiss roll &nbsp;·&nbsp;
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OWNER/REPO/blob/main/notebooks/02_peaks.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/detzer0/NODE_GOA/blob/main/notebooks/02_peaks.ipynb)
 Peaks
 
 ---
@@ -30,8 +30,8 @@ Peaks
 ## Quick start
 
 ```bash
-git clone https://github.com/OWNER/REPO.git
-cd REPO
+git clone https://github.com/detzer0/NODE_GOA.git
+cd NODE_GOA
 pip install -e .
 ```
 
@@ -81,7 +81,13 @@ coordinates *is* the $H^1$ stationarity measure and a stock SciPy
 implementation respects the $H^1$ geometry.
 
 **Algorithm 2 — adaptive depth.** From the accepted solution the local
-indicators are evaluated, a marking rule selects $\mathcal{M}_K$, each marked interval is
+indicators
+
+$$ \eta_k = \left|\widetilde\rho_{\mathrm{adj}}^k\right|
+           + \left|\widetilde\rho_{\mathrm{grad}}^k\right|
+           + \left|\widetilde\rho_{\mathrm{state}}^k\right| $$
+
+are evaluated, a marking rule selects $\mathcal{M}_K$, each marked interval is
 bisected at its midpoint, and the optimized control — together with the Adam
 moments — is carried to the refined grid by midpoint prolongation. Existing
 nodal values are copied, never recomputed.
@@ -194,14 +200,92 @@ grids differ. Section 8 of either notebook compares conservative against Dörfle
 marking at several bulk fractions from one shared calibration, which keeps the
 comparison paired.
 
-Two further notes on fidelity. The paper evaluates the control pullback term of
-eq. (89) with Gauss–Legendre quadrature; this implementation reconstructs the
-pullback linearly at the interval endpoints and integrates the resulting
-polynomial pairings in closed form, using the same $\alpha_k, \beta_k$ as the
-paper. The quadrature is validated against dense numerical integration in
-`verification.self_check`. Second, the state and adjoint supremum factors are
-sampled uniformly on each interval; `indicator_sup_samples` sets the number of
-samples (50 in the paper).
+### Indicator evaluation
+
+The state and adjoint contributions use the **direct reconstructed residual
+pairings**, matching the supplied Swiss-roll and Peaks ablation notebooks.
+On $I_k$, write $h_k=t_k-t_{k-1}$ and
+$\theta_\tau(s)=(1-s)\theta_\tau^{k-1}+s\theta_\tau^k$. The signed terms are
+
+$$
+\widetilde\rho_{\mathrm{adj}}^k
+= -h_k\int_0^1
+\left\langle D_1N_F(x_\tau^{k-1},\theta_\tau(s))^*p_\tau^k,
+ s(x_\tau^k-x_\tau^{k-1})\right\rangle\,ds,
+$$
+
+$$
+\widetilde\rho_{\mathrm{state}}^k
+= h_k\int_0^1
+\left\langle N_F(x_\tau^{k-1},\theta_\tau(s)),
+ (1-s)(p_\tau^k-p_\tau^{k-1})\right\rangle\,ds.
+$$
+
+The reconstructed one-sided jump pairings are zero. Absolute values are taken
+**after** the signed integrals have been evaluated; no residual-norm or sampled
+supremum products enter the estimator. The global value is
+$\eta_K=\tfrac12\sum_k\eta_k$.
+
+The state and adjoint integrals use Gauss--Legendre orders $8,16,32,64,128$.
+Order doubling stops when **every local signed state and adjoint integral**
+agrees with its previous-order value within
+$\mathrm{atol}+\mathrm{rtol}\,|\rho_{\mathrm{new}}|$, with
+$\mathrm{atol}=10^{-9}$ and $\mathrm{rtol}=10^{-7}$.
+As in the reference notebooks, the last estimate is retained silently when the
+maximum order is reached without convergence. This is explicitly recorded as
+`direct_quadrature_converged=False`; the consecutive-order difference is an
+empirical estimate, not a certified quadrature error bound.
+
+The settings can be overridden through `load_preset`, `with_overrides`, YAML,
+or the CLI's `--set` option:
+
+```python
+cfg = lgoa.load_preset(
+    "swiss_roll",
+    direct_quadrature_initial_order=8,
+    direct_quadrature_max_order=128,
+    direct_quadrature_rtol=1e-7,
+    direct_quadrature_atol=1e-9,
+)
+```
+
+Old YAML files remain compatible. `indicator_sup_samples` (and the function
+argument `supremum_samples`) is accepted but no longer affects the indicator.
+
+The **control contribution** follows eq. (89). Its mass pairing is integrated in
+closed form through $\alpha_k,\beta_k$ and the local mass matrix, and its
+derivative pairing cancels analytically because the quadratic reconstruction
+matches both endpoints. The remaining nonlinear pullback term,
+
+$$
+\rho_{\mathrm{dyn}}^k = h_k\int_0^1
+\left\langle D_2N_F(x_\tau^{k-1},\theta_\tau(s))^*p_\tau^k,\;
+A_k\,(s^2-s)\right\rangle ds ,
+$$
+
+uses the same Gauss--Legendre order-doubling rule as the state and adjoint
+residuals, which is what the paper specifies. Setting
+
+```python
+cfg = lgoa.load_preset("swiss_roll", control_pullback_quadrature="endpoint_linear")
+```
+
+reconstructs that pullback linearly from its two endpoint values instead,
+reproducing the earlier ablation notebooks exactly; that path is what
+`tests/test_indicator_regression.py` pins against the stored fixtures. The two
+differ: on a converged Swiss-roll hierarchy the pullback term moved by up to a
+factor of two on individual intervals and by about one per cent of $\eta_k$,
+and it changed sign on intervals where the term nearly cancels.
+
+`LocalIndicators` exposes the signed components and the quadrature order,
+consecutive-order difference, and convergence flag. These diagnostics also
+appear in phase tables and CSV exports, including the immediate
+post-insertion evaluation. The existing `global_practical_indicator` field is
+retained for compatibility; `global_direct_indicator` is an equivalent alias.
+
+**Results made with the old norm-bound indicator should be regenerated.**
+Correcting the estimator can change the marked intervals and therefore the
+subsequent adaptive hierarchy.
 
 ## Tests
 
@@ -210,12 +294,19 @@ pip install -e ".[dev]"
 pytest
 ```
 
-The suite runs the six implementation checks — the tridiagonal solve against
-SciPy, the hand-assembled control and endpoint derivatives against `jax.grad`,
-invariance of the frozen endpoint maps, the closed-form pairing against dense
-quadrature, and Dörfler-with-one-mark against single insertion — then a full
-small hierarchy with every marking rule, and renders every figure. About a
-minute on CPU.
+`lgoa.self_check()` runs eight numerical checks: the original six checks
+(tridiagonal solve, control and endpoint derivatives, frozen endpoints,
+polynomial control pairing, and single-interval refinement), plus independent
+scalar-quadrature checks of the direct state/adjoint and retained control
+residuals.
+
+The added `tests/test_indicator_regression.py` compares the corrected package
+against reference values generated from **both** supplied notebooks. It also
+checks cancellation, signs, quadrature fallback, backward-compatible YAML,
+configuration forwarding at both estimator call sites, short adaptive runs for
+both problems and marking rules, CSV exports, and plotting compatibility.
+Fixture provenance and the numerical comparison are recorded in
+`docs/notebook_agreement.json`.
 
 The notebooks are generated so the two stay in step:
 
@@ -231,7 +322,18 @@ PyYAML; all are preinstalled on Colab. Double precision is enabled through
 call it before building data or parameters. The solver is CPU-friendly: the
 temporal operators are tridiagonal and the networks are small.
 
+## Citation
 
+```bibtex
+@article{HintermuellerKorolev2026,
+  author  = {Hintermüller, Michael and Hinze, Michael and Korolev, Denis},
+  title   = {Layerwise goal-oriented adaptivity for neural {ODE}s:
+             an optimal control perspective},
+  journal = {Journal of Numerical Mathematics},
+  year    = {2026},
+  doi     = {10.1515/jnma-2026-0008}
+}
+```
 
 ## License
 

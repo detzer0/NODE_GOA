@@ -1,6 +1,6 @@
 r"""Implementation self-checks.
 
-Five independent checks guard the hand-written numerics:
+Nine independent checks guard the hand-written numerics:
 
 1. the JAX tridiagonal solve against SciPy's banded solve;
 2. the manually assembled control derivative :math:`R_\tau` against
@@ -22,6 +22,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pandas as pd
+from scipy.integrate import quad
 from scipy.linalg import solve_banded
 
 from . import fem as fem_module
@@ -30,7 +31,10 @@ from . import optimizers
 from . import refinement as refinement_module
 from .backend import dtype, x64_enabled
 
-__all__ = ["self_check", "check_single_interval_refinement_equivalence"]
+__all__ = [
+    "self_check", "check_single_interval_refinement_equivalence",
+    "check_direct_indicator_consistency",
+]
 
 
 def _banded_from_operators(operators, n_nodes):
@@ -97,6 +101,99 @@ def check_single_interval_refinement_equivalence(hidden_dim: int = 3) -> None:
                 raise AssertionError(
                     f"Adam-state transfer for {name} differs from single insertion."
                 )
+
+
+def check_direct_indicator_consistency(
+    params, time_grid, X, y, reg_lambda, control_pullback_quadrature="gauss"
+):
+    """Compare signed residuals with independent scalar SciPy integrations.
+
+    The control reference follows whichever pullback the indicator is asked
+    for: the exact nonlinear pullback for ``"gauss"``, matching eq. (89), or
+    the endpoint-linear reconstruction for ``"endpoint_linear"``. Errors are
+    scaled by 1 + ||reference|| to remain meaningful for cancelling residuals.
+    """
+    from .indicators import compute_local_indicators
+
+    def solution_fn(tree, inputs, labels):
+        return node.forward_adjoint_and_euclidean_grads(
+            tree, inputs, labels, time_grid
+        )[:3]
+
+    actual = compute_local_indicators(
+        params, time_grid, X, y, solution_fn, reg_lambda=reg_lambda,
+        control_pullback_quadrature=control_pullback_quadrature,
+    )
+    endpoint_linear = control_pullback_quadrature == "endpoint_linear"
+    _, states, adjoints = solution_fn(params, X, y)
+    states = np.asarray(states, dtype=float)
+    adjoints = np.asarray(adjoints, dtype=float)
+    theta = np.asarray(node.pack_controls(params), dtype=float)
+    grid = np.asarray(time_grid, dtype=float)
+    h = np.diff(grid)
+    d = int(params["b"].shape[1])
+    expected = np.zeros((len(h), 3))  # signed adjoint, state, control
+
+    for k, dt in enumerate(h):
+        x0, p1 = states[k], adjoints[k + 1]
+        dx, dp = states[k + 1] - x0, p1 - adjoints[k]
+        t0, t1 = theta[k], theta[k + 1]
+        delta = t1 - t0
+        left_slope = np.zeros_like(t0) if k == 0 else (t0 - theta[k - 1]) / h[k - 1]
+        b_poly = dt * left_slope
+        a_poly = delta - b_poly
+
+        def field_and_pullback(s, x0=x0, p1=p1, t0=t0, delta=delta):
+            t = t0 + s * delta
+            matrix, bias = t[:d * d].reshape(d, d), t[d * d:]
+            f = np.tanh(x0 @ matrix + bias)
+            weighted = p1 * (1.0 - f * f)
+            return f, weighted @ matrix.T, np.concatenate([
+                (x0.T @ weighted).ravel(), weighted.sum(axis=0)
+            ])
+
+        def adjoint_integrand(s, evaluate=field_and_pullback, dx=dx, dt=dt):
+            return -dt * float(np.sum(evaluate(s)[1] * (s * dx)))
+
+        def state_integrand(s, evaluate=field_and_pullback, dp=dp, dt=dt):
+            return dt * float(np.sum(evaluate(s)[0] * ((1.0 - s) * dp)))
+
+        q0 = field_and_pullback(0.0)[2]
+        q1 = field_and_pullback(1.0)[2]
+
+        def control_integrand(
+            s, t0=t0, delta=delta, a_poly=a_poly, b_poly=b_poly,
+            q0=q0, q1=q1, dt=dt,
+        ):
+            t = t0 + s * delta
+            reconstruction_error = a_poly * (s * s - s)
+            derivative_error = (2.0 * a_poly * s + b_poly - delta) / dt
+            q = (
+                (1.0 - s) * q0 + s * q1
+                if endpoint_linear
+                else field_and_pullback(s)[2]
+            )
+            return dt * (
+                reg_lambda * np.dot(t, reconstruction_error)
+                + reg_lambda * np.dot(delta / dt, derivative_error)
+                + np.dot(q, reconstruction_error)
+            )
+
+        for column, integrand in enumerate(
+            (adjoint_integrand, state_integrand, control_integrand)
+        ):
+            expected[k, column] = quad(
+                integrand, 0.0, 1.0, epsabs=1.0e-12, epsrel=1.0e-12
+            )[0]
+
+    actual_state_adjoint = np.stack([actual.adjoint_signed, actual.state_signed], axis=1)
+    state_adjoint_error = np.linalg.norm(actual_state_adjoint - expected[:, :2]) / (
+        1.0 + np.linalg.norm(expected[:, :2])
+    )
+    control_error = np.linalg.norm(actual.control_signed - expected[:, 2]) / (
+        1.0 + np.linalg.norm(expected[:, 2])
+    )
+    return float(state_adjoint_error), float(control_error)
 
 
 def self_check(
@@ -209,6 +306,21 @@ def self_check(
     except AssertionError:
         refinement_error = np.inf
 
+    # 7./8. nonconstant controls exercise all reconstructed residuals -------
+    perturbed = dict(params)
+    perturbed["A"] = params["A"] + jnp.asarray(
+        0.15 * rng.normal(size=params["A"].shape), dtype=float_dtype
+    )
+    perturbed["b"] = params["b"] + jnp.asarray(
+        0.15 * rng.normal(size=params["b"].shape), dtype=float_dtype
+    )
+    direct_error, gauss_control_error = check_direct_indicator_consistency(
+        perturbed, tiny_grid, X, y, reg_lambda, "gauss"
+    )
+    _, linear_control_error = check_direct_indicator_consistency(
+        perturbed, tiny_grid, X, y, reg_lambda, "endpoint_linear"
+    )
+
     solver_tolerance = 1.0e-9 if x64_enabled() else 2.0e-6
     gradient_tolerance = 5.0e-8 if x64_enabled() else 2.0e-5
     frozen_tolerance = 1.0e-14 if x64_enabled() else 1.0e-7
@@ -220,6 +332,12 @@ def self_check(
         ("frozen endpoint maps unchanged", frozen_change, frozen_tolerance),
         ("closed-form control pairing", pairing_error, 2.0e-8),
         ("Dorfler(|M|=1) == single insertion", refinement_error, 0.0),
+        ("direct state/adjoint residuals vs scalar quadrature", direct_error,
+         5.0e-8 if x64_enabled() else 2.0e-5),
+        ("Gauss control residual vs scalar quadrature", gauss_control_error,
+         5.0e-8 if x64_enabled() else 2.0e-5),
+        ("endpoint-linear control residual vs scalar quadrature", linear_control_error,
+         5.0e-8 if x64_enabled() else 2.0e-5),
     ]
     table = pd.DataFrame(
         [

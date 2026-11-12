@@ -13,8 +13,10 @@ field of that name, so the notebook never has to know the section layout.
 from __future__ import annotations
 
 import dataclasses
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
+from numbers import Integral
 from pathlib import Path
 from typing import Any
 
@@ -178,7 +180,14 @@ class AdaptiveConfig:
     allow_nonstationary_refinement: bool = True
     near_stationary_ratio: float = 1.5
     indicator_tolerance: float | None = None
+    # Backward compatibility for old YAML files; no longer used by the indicator.
     indicator_sup_samples: int = 50
+    direct_quadrature_initial_order: int = 8
+    direct_quadrature_max_order: int = 128
+    direct_quadrature_rtol: float = 1.0e-7
+    direct_quadrature_atol: float = 1.0e-9
+    # "gauss" follows eq. (89); "endpoint_linear" reproduces the notebooks.
+    control_pullback_quadrature: str = "gauss"
 
     def __post_init__(self) -> None:
         if not 1 <= self.initial_depth <= self.max_depth:
@@ -193,6 +202,25 @@ class AdaptiveConfig:
             raise ValueError("near_stationary_ratio must be at least one.")
         if self.indicator_sup_samples < 2:
             raise ValueError("indicator_sup_samples must be at least two.")
+        for name in ("direct_quadrature_initial_order", "direct_quadrature_max_order"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, Integral):
+                raise ValueError(f"{name} must be an integer.")
+        if self.direct_quadrature_initial_order < 2:
+            raise ValueError("direct_quadrature_initial_order must be at least two.")
+        if self.direct_quadrature_max_order < 2 * self.direct_quadrature_initial_order:
+            raise ValueError(
+                "direct_quadrature_max_order must be at least twice the initial order."
+            )
+        for name in ("direct_quadrature_rtol", "direct_quadrature_atol"):
+            value = getattr(self, name)
+            if not math.isfinite(value) or value <= 0.0:
+                raise ValueError(f"{name} must be finite and positive.")
+        if self.control_pullback_quadrature not in ("gauss", "endpoint_linear"):
+            raise ValueError(
+                "control_pullback_quadrature must be 'gauss' or "
+                f"'endpoint_linear', got {self.control_pullback_quadrature!r}."
+            )
 
     @property
     def layer_budget(self) -> int:
@@ -235,6 +263,14 @@ class ExperimentConfig:
                 f"depth budget            : K = {self.adaptive.initial_depth} "
                 f"-> {self.adaptive.max_depth}",
                 f"marking rule            : {marking}",
+                "indicator               : direct reconstructed residuals",
+                f"state/adjoint quadrature: GL "
+                f"{self.adaptive.direct_quadrature_initial_order}"
+                f" -> {self.adaptive.direct_quadrature_max_order}"
+                f" (rtol={self.adaptive.direct_quadrature_rtol:g}, "
+                f"atol={self.adaptive.direct_quadrature_atol:g})",
+                f"control pullback       : "
+                f"{self.adaptive.control_pullback_quadrature}",
                 f"Adam moment transfer    : "
                 f"{'on' if self.adaptive.transfer_adam_state else 'off'}",
                 f"BFGS polish             : "

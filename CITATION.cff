@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the accompanying article."
 title: "lgoa: layerwise goal-oriented adaptivity for neural ODEs"
-version: 1.0.0
+version: 1.0.2
 license: MIT
 type: software
 authors:

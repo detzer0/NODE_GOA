@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lgoa"
-version = "1.0.0"
+version = "1.0.2"
 description = "Layerwise goal-oriented adaptivity for neural ODEs: an optimal control perspective"
 readme = "README.md"
 requires-python = ">=3.10"
